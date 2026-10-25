@@ -1,0 +1,535 @@
+<Window x:Class="ChronoPower.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:models="clr-namespace:ChronoPower.Models"
+        mc:Ignorable="d"
+        Title="ChronoPower — Akıllı Güç &amp; Kapatma Asistanı"
+        Height="780" Width="870"
+        MinHeight="700" MinWidth="800"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BgDark}"
+        Foreground="{StaticResource TextPrimary}"
+        FontFamily="Segoe UI Variable Display, Segoe UI, sans-serif">
+
+    <Window.Resources>
+        <!-- Ultra-Premium Power Action Card Style -->
+        <Style x:Key="PowerActionCardStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,10,10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="CardBorder" Width="190" Height="86" CornerRadius="14"
+                                Background="#10182A"
+                                BorderBrush="#202D45"
+                                BorderThickness="1.2" Padding="12,10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Seçili Rozet Noktası (Sağ Üst) -->
+                                <Border x:Name="ActiveBadge" Grid.Column="1" Width="7" Height="7" CornerRadius="3.5"
+                                        Background="#818CF8" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,0,2,0" Visibility="Collapsed">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="6" Color="#818CF8" Opacity="0.9" ShadowDepth="0" />
+                                    </Border.Effect>
+                                </Border>
+
+                                <!-- İkon Yuvası (Glass Squircle) -->
+                                <Border x:Name="IconBox" Width="40" Height="40" CornerRadius="11" Background="#172238"
+                                        VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <Path Data="{Binding IconData}"
+                                          Stroke="{Binding AccentColor}" StrokeThickness="2.2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Width="19" Height="19" Stretch="Uniform" />
+                                </Border>
+
+                                <!-- Başlık ve Açıklama -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TxtTitle" Text="{Binding Title}" FontWeight="SemiBold" FontSize="13"
+                                               Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="TxtSubtitle" Text="{Binding Subtitle}" FontSize="10.5" Foreground="{StaticResource TextMuted}"
+                                               TextWrapping="Wrap" MaxHeight="32" Margin="0,3,0,0" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="CardBorder" Property="Background" Value="#17233B" />
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="#384C6E" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="CardBorder" Property="BorderBrush" Value="#818CF8" />
+                                <Setter TargetName="CardBorder" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#271F52" Offset="0" />
+                                            <GradientStop Color="#14112F" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="CardBorder" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="16" Color="#6366F1" Opacity="0.4" ShadowDepth="0" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="ActiveBadge" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="TxtTitle" Property="Foreground" Value="White" />
+                                <Setter TargetName="TxtTitle" Property="FontWeight" Value="Bold" />
+                                <Setter TargetName="TxtSubtitle" Property="Foreground" Value="#CBD5E1" />
+                                <Setter TargetName="IconBox" Property="Background" Value="#2C2366" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <!-- 0: Başlık Çubuğu -->
+            <RowDefinition Height="Auto" />
+            <!-- 1: Ana Gövde -->
+            <RowDefinition Height="*" />
+            <!-- 2: Durum Çubuğu -->
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ========================================== -->
+        <!-- HEADER (LOGO & AYARLAR) -->
+        <!-- ========================================== -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Logo & Başlık -->
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="46" Height="46" CornerRadius="14" Background="{StaticResource PrimaryGradient}" Margin="0,0,14,0">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="14" Color="#6366F1" Opacity="0.45" ShadowDepth="2" />
+                    </Border.Effect>
+                    <Path Data="M12 2v10m-6.364-7.636a9 9 0 1 0 12.728 0"
+                          Stroke="White" StrokeThickness="2.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Width="22" Height="22" Stretch="Uniform" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="ChronoPower" FontSize="22" FontWeight="Bold" Foreground="White" />
+                        <Border Background="#1E1B4B" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="6" Padding="6,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                            <TextBlock Text="PRO v1.2" FontSize="10" FontWeight="Bold" Foreground="#A5B4FC" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Akıllı Güç Yönetimi &amp; Donanım Uyandırma Asistanı" FontSize="12" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Hızlı Seçenekler (Modern Toggle Switchler) -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <CheckBox Content="Zorla Kapat" Style="{StaticResource ModernToggleSwitch}"
+                          IsChecked="{Binding ForceCloseApps}" Margin="0,0,18,0"
+                          ToolTip="Açık veya donan programların kapanmayı engellemesini önler." />
+                <CheckBox Content="Sesli Uyarı" Style="{StaticResource ModernToggleSwitch}"
+                          IsChecked="{Binding PlayAlertSound}" Margin="0,0,18,0"
+                          ToolTip="Başlangıçta, son 1 dakikada ve iptalde sistem sesi çalar." />
+                <CheckBox Content="Tepsiye Küçült" Style="{StaticResource ModernToggleSwitch}"
+                          IsChecked="{Binding MinimizeToTray}"
+                          ToolTip="Pencere küçültüldüğünde saatin yanındaki sistem tepsisine (Tray) iner." />
+            </StackPanel>
+        </Grid>
+
+        <!-- ========================================== -->
+        <!-- ANA İÇERİK -->
+        <!-- ========================================== -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <!-- ================= 1. GÜÇ EYLEMİ SEÇİMİ ================= -->
+                <Border Background="#0A0F1D" BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="1.2" CornerRadius="18" Padding="18,16,8,8" Margin="0,0,0,18">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="{StaticResource AccentIndigo}" VerticalAlignment="Center" Margin="0,0,8,0">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="6" Color="#6366F1" Opacity="0.8" ShadowDepth="0" />
+                                </Border.Effect>
+                            </Border>
+                            <TextBlock Text="1. UYGULANACAK GÜÇ MODUNU SEÇİN" FontSize="11.5" FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondary}" />
+                        </StackPanel>
+
+                        <!-- Eylem Kartları Seçim Alanı -->
+                        <ListBox ItemsSource="{Binding AvailableActions}"
+                                 SelectedItem="{Binding SelectedAction}"
+                                 IsEnabled="{Binding IsTaskInactive}"
+                                 ItemContainerStyle="{StaticResource PowerActionCardStyle}"
+                                 Background="Transparent" BorderThickness="0">
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= 2. ZAMANLAMA YÖNTEMİ ================= -->
+                <Border Background="#0A0F1D" BorderBrush="{StaticResource GlassBorderBrush}"
+                        BorderThickness="1.2" CornerRadius="18" Padding="18" Margin="0,0,0,18">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Border Width="8" Height="8" CornerRadius="4" Background="{StaticResource AccentPurple}" VerticalAlignment="Center" Margin="0,0,8,0">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="6" Color="#8B5CF6" Opacity="0.8" ShadowDepth="0" />
+                                </Border.Effect>
+                            </Border>
+                            <TextBlock Text="2. ZAMANLAMA YÖNTEMİNİ BELİRLEYİN" FontSize="11.5" FontWeight="Bold"
+                                       Foreground="{StaticResource TextSecondary}" />
+                        </StackPanel>
+
+                        <!-- Segmented Pill Tab Bar -->
+                        <Border Background="#070C16" BorderBrush="#1C273D" BorderThickness="1" CornerRadius="12" Padding="4" HorizontalAlignment="Left"
+                                IsEnabled="{Binding IsTaskInactive}" Margin="0,0,0,16">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="⏱️ Geri Sayım (Süre)" Style="{StaticResource SegmentedTabStyle}"
+                                             IsChecked="{Binding IsCountdownMode, Mode=OneWay}"
+                                             Command="{Binding SelectModeCommand}" CommandParameter="Countdown" Margin="0,0,3,0" />
+
+                                <RadioButton Content="⏰ Belirli Bir Saatte" Style="{StaticResource SegmentedTabStyle}"
+                                             IsChecked="{Binding IsAtTimeMode, Mode=OneWay}"
+                                             Command="{Binding SelectModeCommand}" CommandParameter="AtTime" Margin="0,0,3,0" />
+
+                                <RadioButton Content="💤 Hareketsiz Kalınca (Idle)" Style="{StaticResource SegmentedTabStyle}"
+                                             IsChecked="{Binding IsIdleMode, Mode=OneWay}"
+                                             Command="{Binding SelectModeCommand}" CommandParameter="Idle" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Zamanlama Detay Kutusu -->
+                        <Border Background="#0E1626" BorderBrush="#1C283E" BorderThickness="1" CornerRadius="14" Padding="18">
+                            <StackPanel>
+
+                                <!-- ==== MOD 1: GERİ SAYIM ==== -->
+                                <StackPanel Visibility="{Binding IsCountdownMode, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Hızlı Süre Seçenekleri (Presets)" FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10" />
+                                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,16" IsEnabled="{Binding IsTaskInactive}">
+                                        <Button Content="+15 Dk" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="15" />
+                                        <Button Content="+30 Dk" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="30" />
+                                        <Button Content="+45 Dk" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="45" />
+                                        <Button Content="+1 Saat" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="60" />
+                                        <Button Content="+2 Saat" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="120" />
+                                        <Button Content="+3 Saat" Style="{StaticResource ModernChipButton}" Margin="0,0,8,8"
+                                                Command="{Binding SetPresetDurationCommand}" CommandParameter="180" />
+                                    </WrapPanel>
+
+                                    <!-- Slider Ayarları -->
+                                    <Grid IsEnabled="{Binding IsTaskInactive}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Saat -->
+                                        <StackPanel Grid.Column="0">
+                                            <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                                                <TextBlock Text="Saat:" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                                <Border Background="#1E1B4B" BorderBrush="#6366F1" BorderThickness="1" CornerRadius="8" Padding="10,3" DockPanel.Dock="Right">
+                                                    <TextBlock Text="{Binding CountdownHours, StringFormat='{}{0} saat'}"
+                                                               FontWeight="Bold" Foreground="#A5B4FC" FontSize="11.5" />
+                                                </Border>
+                                            </DockPanel>
+                                            <Slider Minimum="0" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True"
+                                                    Style="{StaticResource ModernSlider}"
+                                                    Value="{Binding CountdownHours, Mode=TwoWay}" />
+                                        </StackPanel>
+
+                                        <!-- Dakika -->
+                                        <StackPanel Grid.Column="2">
+                                            <DockPanel LastChildFill="False" Margin="0,0,0,8">
+                                                <TextBlock Text="Dakika:" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                                <Border Background="#2E1065" BorderBrush="#8B5CF6" BorderThickness="1" CornerRadius="8" Padding="10,3" DockPanel.Dock="Right">
+                                                    <TextBlock Text="{Binding CountdownMinutes, StringFormat='{}{0} dakika'}"
+                                                               FontWeight="Bold" Foreground="#C084FC" FontSize="11.5" />
+                                                </Border>
+                                            </DockPanel>
+                                            <Slider Minimum="0" Maximum="59" TickFrequency="1" IsSnapToTickEnabled="True"
+                                                    Style="{StaticResource ModernSlider}"
+                                                    Value="{Binding CountdownMinutes, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- ==== MOD 2: BELİRLİ SAATTE ==== -->
+                                <StackPanel Visibility="{Binding IsAtTimeMode, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="İşlemin gerçekleşmesini istediğiniz tam saati belirleyin:"
+                                               FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,14" />
+
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,14" IsEnabled="{Binding IsTaskInactive}">
+                                        <StackPanel Width="90" Margin="0,0,10,0">
+                                            <TextBlock Text="Saat (00-23)" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                            <Border CornerRadius="10" Background="#080E1C" BorderBrush="#253550" BorderThickness="1.2">
+                                                <TextBox Text="{Binding TargetHour, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontSize="22" FontWeight="Bold" TextAlignment="Center"
+                                                         Background="Transparent" Foreground="White" BorderThickness="0"
+                                                         Padding="8" MaxLength="2" />
+                                            </Border>
+                                        </StackPanel>
+
+                                        <TextBlock Text=":" FontSize="26" FontWeight="Bold" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,14,0,0"/>
+
+                                        <StackPanel Width="90" Margin="10,0,0,0">
+                                            <TextBlock Text="Dakika (00-59)" HorizontalAlignment="Center" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                            <Border CornerRadius="10" Background="#080E1C" BorderBrush="#253550" BorderThickness="1.2">
+                                                <TextBox Text="{Binding TargetMinute, UpdateSourceTrigger=PropertyChanged}"
+                                                         FontSize="22" FontWeight="Bold" TextAlignment="Center"
+                                                         Background="Transparent" Foreground="White" BorderThickness="0"
+                                                         Padding="8" MaxLength="2" />
+                                            </Border>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <TextBlock Text="💡 Seçtiğiniz saat şu andan önce kalırsa otomatik olarak yarınki o saat hedeflenir."
+                                               FontSize="11.5" Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" />
+                                </StackPanel>
+
+                                <!-- ==== MOD 3: BOŞTA KALINCA ==== -->
+                                <StackPanel Visibility="{Binding IsIdleMode, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Klavye veya fareye dokunulmadığında tetiklenecek inaktivite süresi:"
+                                               FontSize="12" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,12" />
+
+                                    <DockPanel LastChildFill="False" Margin="0,0,0,8" IsEnabled="{Binding IsTaskInactive}">
+                                        <TextBlock Text="Hareketsizlik Eşiği:" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                        <Border Background="#083344" BorderBrush="#06B6D4" BorderThickness="1" CornerRadius="8" Padding="10,3" DockPanel.Dock="Right">
+                                            <TextBlock Text="{Binding IdleThresholdMinutes, StringFormat='{}{0} Dakika'}"
+                                                       FontWeight="Bold" Foreground="#67E8F9" FontSize="11.5" />
+                                        </Border>
+                                    </DockPanel>
+
+                                    <Slider Minimum="5" Maximum="120" TickFrequency="5" IsSnapToTickEnabled="True"
+                                            Style="{StaticResource ModernSlider}"
+                                            Value="{Binding IdleThresholdMinutes, Mode=TwoWay}" IsEnabled="{Binding IsTaskInactive}" Margin="0,0,0,14" />
+
+                                    <Border Background="#080E1C" CornerRadius="10" Padding="14,10" BorderBrush="#1C273C" BorderThickness="1">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBlock Text="Canlı Boşta Kalma Süresi: " FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                            <TextBlock Text="{Binding CurrentIdleTime, StringFormat='{}{0:mm\\:ss}'}"
+                                                       FontWeight="Bold" Foreground="{StaticResource AccentCyan}" FontSize="12.5" />
+                                            <TextBlock Text=" (Fare hareket ettiğinde sıfırlanır)" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="6,0,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= 3. OTOMATİK UYANDIRMA (WAKE TIMER) ================= -->
+                <Border Background="#061614" BorderBrush="{StaticResource EmeraldGlassBorder}"
+                        BorderThickness="1.2" CornerRadius="18" Padding="18" Margin="0,0,0,18">
+                    <StackPanel>
+                        <DockPanel LastChildFill="False" Margin="0,0,0,10">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Width="8" Height="8" CornerRadius="4" Background="#10B981" VerticalAlignment="Center" Margin="0,0,8,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="6" Color="#10B981" Opacity="0.8" ShadowDepth="0" />
+                                    </Border.Effect>
+                                </Border>
+                                <TextBlock Text="3. OTOMATİK UYANDIRMA (WAKE TIMER)" FontSize="11.5" FontWeight="Bold"
+                                           Foreground="#A7F3D0" Margin="0,0,10,0" />
+                                <Border Background="#064E3B" BorderBrush="#10B981" BorderThickness="1" CornerRadius="6" Padding="8,2"
+                                        Visibility="{Binding SupportsWakeTimer, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="⚡ DONANIM RTC DESTEĞİ" FontSize="9.5" FontWeight="Bold" Foreground="#6EE7B7" />
+                                </Border>
+                            </StackPanel>
+
+                            <CheckBox DockPanel.Dock="Right" Content="Eylemden Sonra Bilgisayarı Otomatik Uyandır"
+                                      Style="{StaticResource ModernToggleSwitch}"
+                                      IsChecked="{Binding EnableWakeTimer}"
+                                      IsEnabled="{Binding SupportsWakeTimer}"
+                                      ToolTip="Uyku veya Hazırda Beklet modundan sonra bilgisayarı donanım saatiyle (RTC) otomatik olarak açar." />
+                        </DockPanel>
+
+                        <!-- Uyandırma Ayarları Bölümü (Sadece EnableWakeTimer açıkken) -->
+                        <StackPanel Visibility="{Binding EnableWakeTimer, Converter={StaticResource BoolToVis}}">
+                            <Border Background="#051D18" BorderBrush="#0E4E3F" BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,4,0,12">
+                                <Grid IsEnabled="{Binding IsTaskInactive}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="280" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Sol: Ön Tanımlar -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Kaç süre sonra uyandırılsın?" FontSize="12" Foreground="#A7F3D0" Margin="0,0,0,8" />
+                                        <WrapPanel Orientation="Horizontal">
+                                            <Button Content="+15 Dk" Style="{StaticResource ModernEmeraldChipButton}" Margin="0,0,6,6"
+                                                    Command="{Binding SetPresetWakeDurationCommand}" CommandParameter="15" />
+                                            <Button Content="+30 Dk" Style="{StaticResource ModernEmeraldChipButton}" Margin="0,0,6,6"
+                                                    Command="{Binding SetPresetWakeDurationCommand}" CommandParameter="30" />
+                                            <Button Content="+1 Saat" Style="{StaticResource ModernEmeraldChipButton}" Margin="0,0,6,6"
+                                                    Command="{Binding SetPresetWakeDurationCommand}" CommandParameter="60" />
+                                            <Button Content="+2 Saat" Style="{StaticResource ModernEmeraldChipButton}" Margin="0,0,6,6"
+                                                    Command="{Binding SetPresetWakeDurationCommand}" CommandParameter="120" />
+                                            <Button Content="+4 Saat" Style="{StaticResource ModernEmeraldChipButton}" Margin="0,0,6,6"
+                                                    Command="{Binding SetPresetWakeDurationCommand}" CommandParameter="240" />
+                                        </WrapPanel>
+                                    </StackPanel>
+
+                                    <!-- Sağ: Kaydırıcı ve Değer -->
+                                    <StackPanel Grid.Column="1" Margin="20,0,0,0" VerticalAlignment="Center">
+                                        <DockPanel LastChildFill="False" Margin="0,0,0,6">
+                                            <TextBlock Text="Uyandırma Süresi:" FontSize="11.5" Foreground="#6EE7B7" />
+                                            <Border Background="#064E3B" BorderBrush="#10B981" BorderThickness="1" CornerRadius="8" Padding="10,2" DockPanel.Dock="Right">
+                                                <TextBlock Text="{Binding WakeAfterMinutes, StringFormat='{}{0} Dakika'}"
+                                                           FontWeight="Bold" Foreground="#A7F3D0" FontSize="11.5" />
+                                            </Border>
+                                        </DockPanel>
+                                        <Slider Minimum="10" Maximum="360" TickFrequency="10" IsSnapToTickEnabled="True"
+                                                Style="{StaticResource ModernEmeraldSlider}"
+                                                Value="{Binding WakeAfterMinutes, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Durum & Bilgilendirme Rozeti -->
+                        <Border Background="#041412" CornerRadius="10" Padding="14,10" BorderBrush="#0D3F33" BorderThickness="1">
+                            <TextBlock Text="{Binding WakeInfoText}" FontSize="12"
+                                       Foreground="#6EE7B7" TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- ================= 4. CANLI SAYAÇ & KONTROL PANELİ ================= -->
+
+                <!-- GÖREV AKTİFKEN GÖSTERİLEN BÖLÜM -->
+                <Border Visibility="{Binding IsTaskActive, Converter={StaticResource BoolToVis}}"
+                        Background="#0C1322" BorderBrush="{StaticResource AccentIndigo}" BorderThickness="1.5"
+                        CornerRadius="20" Padding="24" Margin="0,0,0,20">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="24" Color="#6366F1" Opacity="0.35" ShadowDepth="0" />
+                    </Border.Effect>
+                    <StackPanel HorizontalAlignment="Center">
+
+                        <!-- Rozet -->
+                        <Border Background="#172238" BorderBrush="#334155" BorderThickness="1" CornerRadius="20" Padding="16,6" HorizontalAlignment="Center" Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Aktif Görev: " FontSize="12.5" Foreground="{StaticResource TextSecondary}" />
+                                <TextBlock Text="{Binding SelectedAction.Title}" FontWeight="Bold" Foreground="{Binding SelectedAction.AccentColor}" FontSize="12.5" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Dijital Sayaç -->
+                        <TextBlock Text="{Binding FormattedRemainingTime}"
+                                   FontSize="50" FontWeight="ExtraBold" HorizontalAlignment="Center"
+                                   Foreground="White" Margin="0,0,0,10"
+                                   FontFamily="Consolas, Cascadia Code, Segoe UI Variable Display" />
+
+                        <!-- Planlanan Zaman -->
+                        <TextBlock Text="{Binding TargetDateTimeText}"
+                                   FontSize="13" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,0,0,14" />
+
+                        <!-- İlerleme Çubuğu -->
+                        <ProgressBar Width="500" Height="10" Style="{StaticResource ModernProgressBarStyle}"
+                                     Value="{Binding ProgressPercentage}" Maximum="100" Margin="0,0,0,18" />
+
+                        <!-- Son 60 Saniye Uyarısı -->
+                        <Border Visibility="{Binding IsGracePeriod, Converter={StaticResource BoolToVis}}"
+                                Background="#3F1219" BorderBrush="{StaticResource AccentRed}" BorderThickness="1"
+                                CornerRadius="10" Padding="14,10" Margin="0,0,0,16" Width="500">
+                            <TextBlock Text="⚠️ DİKKAT: 1 dakikadan az süre kaldı! İptal etmek için aşağıdaki butona basın."
+                                       FontSize="12" FontWeight="SemiBold" Foreground="#FCA5A5" HorizontalAlignment="Center" TextAlignment="Center" />
+                        </Border>
+
+                        <!-- Süre Ekleme ve İptal Butonları -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button Content="+10 Dk Ekle" Style="{StaticResource ModernChipButton}"
+                                    Command="{Binding AddMinutesCommand}" CommandParameter="10" Margin="0,0,10,0" Padding="18,10" />
+                            <Button Content="+30 Dk Ekle" Style="{StaticResource ModernChipButton}"
+                                    Command="{Binding AddMinutesCommand}" CommandParameter="30" Margin="0,0,18,0" Padding="18,10" />
+                            <Button Content="❌ Görevi İptal Et" Style="{StaticResource ModernDangerButton}"
+                                    Command="{Binding CancelTaskCommand}" />
+                        </StackPanel>
+
+                    </StackPanel>
+                </Border>
+
+                <!-- GÖREV ÇALIŞMIYORKEN BAŞLATMA BUTONLARI -->
+                <Grid Visibility="{Binding IsTaskInactive, Converter={StaticResource BoolToVis}}" Margin="0,0,0,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0" Content="⚡ ZAMANLAYICIYI BAŞLAT"
+                            Style="{StaticResource ModernPrimaryButton}" Height="54" FontSize="15"
+                            Command="{Binding StartTaskCommand}" Margin="0,0,14,0" />
+
+                    <Button Grid.Column="1" Content="Hemen Şimdi Uygula"
+                            Style="{StaticResource ModernOutlineButton}" Height="54"
+                            Command="{Binding ExecuteImmediatelyCommand}"
+                            ToolTip="Zamanlayıcıyı beklemeden seçili güç eylemini anında çalıştırır." />
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ========================================== -->
+        <!-- DURUM ÇUBUĞU / ALT BİLGİ -->
+        <!-- ========================================== -->
+        <Border Grid.Row="2" Background="#0A0F1D" BorderBrush="{StaticResource BorderSubtle}"
+                BorderThickness="0,1,0,0" Padding="16,12" Margin="-24,10,-24,-24">
+            <DockPanel LastChildFill="False">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="9" Height="9" CornerRadius="4.5" Margin="0,0,10,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#10B981" />
+                                <Setter Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="8" Color="#10B981" Opacity="0.8" ShadowDepth="0" />
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsTaskActive}" Value="True">
+                                        <Setter Property="Background" Value="#F59E0B" />
+                                        <Setter Property="Effect">
+                                            <Setter.Value>
+                                                <DropShadowEffect BlurRadius="8" Color="#F59E0B" Opacity="0.8" ShadowDepth="0" />
+                                            </Setter.Value>
+                                        </Setter>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                    </Border>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12.5" Foreground="{StaticResource TextSecondary}" />
+                </StackPanel>
+
+                <TextBlock Text="ChronoPower v1.2 PRO • Akıllı Güç &amp; Donanım Otomasyonu" FontSize="11" Foreground="{StaticResource TextMuted}"
+                           DockPanel.Dock="Right" VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+    </Grid>
+</Window>
