@@ -48,6 +48,20 @@ dotnet run
 
 ---
 
+## 📚 Dokümantasyon (Core Docs)
+
+| Doküman | Açıklama |
+| :--- | :--- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Katmanlar, Win32 P/Invoke API'leri ve MVVM mimari tasarımı |
+| [ROADMAP.md](ROADMAP.md) | Gelecek sürümler, özellik hedefleri ve kilometre taşları |
+| [CHANGELOG.md](CHANGELOG.md) | Sürüm geçmişi ve değişiklik dökümü (SemVer) |
+| [KNOWLEDGE.md](KNOWLEDGE.md) | Mühendislik hafızası, kritik mimari kararlar (ADR) ve Gotchas |
+| [TASKS.md](TASKS.md) | Aktif sprint görevleri ve tamamlanma durumu |
+| [SKILLS.md](SKILLS.md) | Ajan anayasası, Definition of Done ve geliştirici kuralları |
+| [LICENSE](LICENSE) | GNU General Public License v3.0 (GPL-3.0) tam metni |
+
+---
+
 ## 📄 Lisans
 
-Bu proje MIT lisansı ile lisanslanmıştır.
+Bu proje **GNU General Public License v3.0 (GPL-3.0)** ile lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakabilirsiniz.
